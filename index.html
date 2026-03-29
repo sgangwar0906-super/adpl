@@ -528,7 +528,7 @@
 
         function getPlayerImagePath(playerName) {
             const initials = PLAYER_INITIALS[playerName];
-            if (initials) return `images/players/${initials}.png`;
+            if (initials) return `${initials}.png`;
             return null;
         }
 
@@ -932,7 +932,13 @@
 
         function renderMoreView() {
             const html = `<div class="card"><h2>🎬 ADPL Extras – Introduction & Theme</h2><div class="media-container">
-                    <div class="media-card"><h3>📽️ Player Introduction Video</h3><video id="introVideo" controls preload="metadata"><source src="introduction.mp4" type="video/mp4">Your browser does not support the video tag.</video><p style="font-size:0.8rem; margin-top:8px; color:#aaa;">🎬 Official ADPL 2026 intro – meet the contenders!</p></div>
+                    <div class="media-card"><h3>📽️ Player Introduction Video</h3><iframe width="560" height="315" 
+src="https://www.youtube.com/embed/8T4vxCnTiNc" 
+title="YouTube video player" 
+frameborder="0" 
+allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+allowfullscreen>
+</iframe>🎬 Official ADPL 2026 intro – meet the contenders!</p></div>
                     <div class="media-card"><h3>🎵 Theme Song</h3><audio id="themeAudio" controls><source src="theme.mp3" type="audio/mpeg">Your browser does not support the audio element.</audio><p style="font-size:0.8rem; margin-top:8px; color:#aaa;">🎧 ADPL 2026 Anthem – play it loud!</p></div>
                     <div><h3>ORGANISED BY-</h3><img src="footer.png" alt="sena" style="max-width: 100%; height: auto;"></div>
                     <div><h3>SPECIAL THANKS</h3><img src="background.png" alt="DARK LORD" style="max-width: 100%; height: auto;"></div>
