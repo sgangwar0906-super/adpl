@@ -480,7 +480,7 @@
             <button class="nav-link" data-view="admin">⚙️ Admin</button>
         </div>
     </div>
-    <div class="auto-save-badge" id="autoSaveBadge">💾 Synced</div>
+    <div class="auto-save-badge" id="autoSaveBadge">💾 Synced with server</div>
 
     <div class="container" id="appContainer"></div>
 
@@ -526,8 +526,6 @@
             return null;
         }
 
-        const IPL_TEAMS = ["CSK", "MI", "RCB", "KKR", "GT", "LSG", "RR", "DC", "PBKS", "SRH"];
-
         function getPlayerImagePath(playerName) {
             const initials = PLAYER_INITIALS[playerName];
             if (initials) return `images/players/${initials}.png`;
@@ -564,7 +562,7 @@
         };
         let isAdminMode = false;
         let currentView = "leaderboard";
-        const API_BASE = window.location.origin + (window.location.port ? ':' + window.location.port : ''); // Assumes backend on same origin
+        const API_BASE = '';
 
         // Helper: fetch all data from server
         async function fetchGlobalData() {
@@ -576,12 +574,12 @@
                 return true;
             } catch (err) {
                 console.error(err);
-                alert('Error loading data from server. Make sure backend is running.');
+                document.getElementById("appContainer").innerHTML = `<div class="card"><h2>⚠️ Connection Error</h2><p>Could not connect to the server. Make sure the backend is running.</p><p>If you are the admin, please deploy this site on Render with the Node.js backend.</p></div>`;
                 return false;
             }
         }
 
-        // Helper: compute points for a player (same logic as before)
+        // Helper: compute points for a player
         function computePlayerPoints(playerName) {
             const preds = globalData.playerPredictions[playerName]?.predictions;
             if (!preds) return { matchWinPoints: 0, motmPoints: 0, seasonPoints: 0, total: 0 };
@@ -613,7 +611,6 @@
             return { matchWinPoints: matchWinTotal, motmPoints: motmTotal, seasonPoints: seasonTotal, total: matchWinTotal + motmTotal + seasonTotal };
         }
 
-        // Admin verification (calls backend)
         async function verifyAdmin() {
             if (isAdminMode) return true;
             const pwd = prompt("🔐 Admin Access Required. Enter password:");
@@ -634,23 +631,23 @@
                     return false;
                 }
             } catch (err) {
-                alert("Error contacting server. Check backend.");
+                alert("Error contacting server.");
                 return false;
             }
         }
 
-        // Save updated predictions for a player
         async function savePlayerPredictions(playerName, predictions) {
             if (!isAdminMode) return false;
+            const pwd = prompt("Admin password to save predictions:");
             try {
                 const res = await fetch('/api/admin/updatePredictions', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ playerName, predictions, adminPassword: prompt("Admin password:") })
+                    body: JSON.stringify({ playerName, predictions, adminPassword: pwd })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    await fetchGlobalData(); // refresh
+                    await fetchGlobalData();
                     return true;
                 } else {
                     alert("Update failed: " + (data.error || "Unknown error"));
@@ -662,7 +659,6 @@
             }
         }
 
-        // Save actual match results (admin only)
         async function saveMatchResults(updatedMatches) {
             if (!isAdminMode && !await verifyAdmin()) return false;
             const pwd = prompt("Confirm admin password to save match results:");
@@ -735,7 +731,7 @@
             }
         }
 
-        // ======================== RENDER FUNCTIONS (mostly unchanged, but using globalData & isAdminMode) ========================
+        // ======================== RENDER FUNCTIONS ========================
         function renderLeaderboard() {
             const pointsMap = {};
             for (let p of ADPL_PLAYERS) pointsMap[p] = computePlayerPoints(p);
@@ -753,17 +749,10 @@
             sorted.forEach((player, idx) => {
                 let rankClass = idx === 0 ? "rank-1" : idx === 1 ? "rank-2" : idx === 2 ? "rank-3" : "";
                 const pts = pointsMap[player];
-                html += `<tr class="${rankClass}">
-                            <td>${idx+1}</td>
-                            <td class="player-clickable" data-player="${player}">${player}</td>
-                            <td class="stat-number">${pts.matchWinPoints}</td>
-                            <td class="stat-number">${pts.motmPoints}</td>
-                            <td class="stat-number">${pts.seasonPoints}</td>
-                            <td class="points-badge">${pts.total}</td>
-                         </tr>`;
+                html += `<tr class="${rankClass}"><td>${idx+1}</td><td class="player-clickable" data-player="${player}">${player}</td><td class="stat-number">${pts.matchWinPoints}</td><td class="stat-number">${pts.motmPoints}</td><td class="stat-number">${pts.seasonPoints}</td><td class="points-badge">${pts.total}</td></tr>`;
             });
             html += `</tbody></table></div>`;
-            container.innerHTML = html;
+            document.getElementById("appContainer").innerHTML = html;
             document.querySelectorAll(".player-clickable").forEach(el => {
                 el.addEventListener("click", () => showPlayerProfile(el.getAttribute("data-player")));
             });
@@ -793,8 +782,7 @@
                 const match = IPL_MATCHES[i];
                 const mp = preds.matchPredictions[i];
                 const teams = getTeamsFromMatch(match);
-                html += `<div class="match-item" data-match-name="${match.toLowerCase()}">
-                    <div class="match-header"><span>🏏 ${match}</span></div>`;
+                html += `<div class="match-item" data-match-name="${match.toLowerCase()}"><div class="match-header"><span>🏏 ${match}</span></div>`;
                 if (teams) {
                     html += `<div class="pred-row"><span class="pred-label">🏆 Winner:</span>`;
                     if (isAdminMode) {
@@ -825,53 +813,24 @@
             html += `</div>`;
             const s = preds.season;
             html += `<div class="admin-section"><h3>🏆 Season Awards Predictions</h3>`;
-            const makeField = (label, value, fieldId, isMulti = false) => {
-                if (isAdminMode) {
-                    if (isMulti) {
-                        let multHtml = `<div><span class="pred-label">${label}</span><div class="pred-row">`;
-                        for(let i=0;i<4;i++) {
-                            let val = (value[i] || "");
-                            multHtml += `<input type="text" class="top4slot" data-slot="${i}" placeholder="Team ${i+1}" value="${val}" style="width:120px">`;
-                        }
-                        return multHtml + `</div></div>`;
-                    } else {
-                        return `<div class="pred-row"><span class="pred-label">${label}</span><input type="text" id="${fieldId}" value="${value || ''}"></div>`;
-                    }
-                } else {
-                    if (Array.isArray(value)) return `<div class="pred-row"><span class="pred-label">${label}</span><span>${value.length ? value.join(", ") : "Not set"}</span></div>`;
-                    else return `<div class="pred-row"><span class="pred-label">${label}</span><span>${value || "Not set"}</span></div>`;
-                }
-            };
-            html += makeField("🏆 Tournament Winner:", s.tournamentWinner, "seasonWinner");
-            html += makeField("🏅 Top 4 Playoff Teams:", s.top4, null, true);
-            html += `<div><span class="pred-label">🧡 Orange Cap:</span><div class="pred-row">`;
             if (isAdminMode) {
-                html += `<input type="text" id="orange1" placeholder="1st choice" value="${s.orangeCap.first || ''}">
-                         <input type="text" id="orange2" placeholder="2nd choice" value="${s.orangeCap.second || ''}">
-                         <input type="text" id="orange3" placeholder="3rd choice" value="${s.orangeCap.third || ''}">`;
+                html += `<div class="pred-row"><span class="pred-label">🏆 Tournament Winner:</span><input type="text" id="seasonWinner" value="${s.tournamentWinner || ''}"></div>`;
+                html += `<div><span class="pred-label">🏅 Top 4 Playoff Teams:</span><div class="pred-row">`;
+                for(let i=0;i<4;i++) html += `<input type="text" class="top4slot" data-slot="${i}" placeholder="Team ${i+1}" value="${s.top4[i] || ''}" style="width:120px">`;
+                html += `</div></div>`;
+                html += `<div><span class="pred-label">🧡 Orange Cap:</span><div class="pred-row"><input type="text" id="orange1" value="${s.orangeCap.first || ''}" placeholder="1st"><input type="text" id="orange2" value="${s.orangeCap.second || ''}" placeholder="2nd"><input type="text" id="orange3" value="${s.orangeCap.third || ''}" placeholder="3rd"></div></div>`;
+                html += `<div><span class="pred-label">💜 Purple Cap:</span><div class="pred-row"><input type="text" id="purple1" value="${s.purpleCap.first || ''}" placeholder="1st"><input type="text" id="purple2" value="${s.purpleCap.second || ''}" placeholder="2nd"><input type="text" id="purple3" value="${s.purpleCap.third || ''}" placeholder="3rd"></div></div>`;
+                html += `<div><span class="pred-label">👑 POTT:</span><div class="pred-row"><input type="text" id="pott1" value="${s.pott.first || ''}" placeholder="1st"><input type="text" id="pott2" value="${s.pott.second || ''}" placeholder="2nd"><input type="text" id="pott3" value="${s.pott.third || ''}" placeholder="3rd"></div></div>`;
+                html += `<button id="saveProfileBtn">💾 Save Predictions</button><span id="profileSaveMsg" class="save-msg"></span>`;
             } else {
-                html += `<span>1st: ${s.orangeCap.first || "—"} | 2nd: ${s.orangeCap.second || "—"} | 3rd: ${s.orangeCap.third || "—"}</span>`;
-            }
-            html += `</div></div><div><span class="pred-label">💜 Purple Cap:</span><div class="pred-row">`;
-            if (isAdminMode) {
-                html += `<input type="text" id="purple1" placeholder="1st choice" value="${s.purpleCap.first || ''}">
-                         <input type="text" id="purple2" placeholder="2nd choice" value="${s.purpleCap.second || ''}">
-                         <input type="text" id="purple3" placeholder="3rd choice" value="${s.purpleCap.third || ''}">`;
-            } else {
-                html += `<span>1st: ${s.purpleCap.first || "—"} | 2nd: ${s.purpleCap.second || "—"} | 3rd: ${s.purpleCap.third || "—"}</span>`;
-            }
-            html += `</div></div><div><span class="pred-label">👑 POTT:</span><div class="pred-row">`;
-            if (isAdminMode) {
-                html += `<input type="text" id="pott1" placeholder="1st choice" value="${s.pott.first || ''}">
-                         <input type="text" id="pott2" placeholder="2nd choice" value="${s.pott.second || ''}">
-                         <input type="text" id="pott3" placeholder="3rd choice" value="${s.pott.third || ''}">`;
-            } else {
-                html += `<span>1st: ${s.pott.first || "—"} | 2nd: ${s.pott.second || "—"} | 3rd: ${s.pott.third || "—"}</span>`;
+                html += `<div class="pred-row"><span class="pred-label">🏆 Tournament Winner:</span><span>${s.tournamentWinner || "Not set"}</span></div>`;
+                html += `<div class="pred-row"><span class="pred-label">🏅 Top 4:</span><span>${s.top4.length ? s.top4.join(", ") : "Not set"}</span></div>`;
+                html += `<div class="pred-row"><span class="pred-label">🧡 Orange Cap:</span><span>1st: ${s.orangeCap.first || "—"} | 2nd: ${s.orangeCap.second || "—"} | 3rd: ${s.orangeCap.third || "—"}</span></div>`;
+                html += `<div class="pred-row"><span class="pred-label">💜 Purple Cap:</span><span>1st: ${s.purpleCap.first || "—"} | 2nd: ${s.purpleCap.second || "—"} | 3rd: ${s.purpleCap.third || "—"}</span></div>`;
+                html += `<div class="pred-row"><span class="pred-label">👑 POTT:</span><span>1st: ${s.pott.first || "—"} | 2nd: ${s.pott.second || "—"} | 3rd: ${s.pott.third || "—"}</span></div>`;
             }
             html += `</div></div>`;
-            if (isAdminMode) html += `<button id="saveProfileBtn">💾 Save Predictions</button><span id="profileSaveMsg" class="save-msg"></span>`;
-            html += `</div></div>`;
-            container.innerHTML = html;
+            document.getElementById("appContainer").innerHTML = html;
             if (isAdminMode) {
                 document.getElementById("saveProfileBtn")?.addEventListener("click", async () => {
                     const newPreds = JSON.parse(JSON.stringify(preds));
@@ -908,15 +867,10 @@
             let html = `<div class="card"><h2>👥 ADPL Players & Their Stats</h2><div class="players-grid">`;
             for (let p of ADPL_PLAYERS) {
                 const pts = computePlayerPoints(p);
-                html += `<div class="player-card" data-player="${p}">
-                            ${renderPlayerAvatar(p, "small")}
-                            <div class="player-name-card">${p}</div>
-                            <div class="player-points-preview">🏆 Wins: ${pts.matchWinPoints} | ⭐ MOTM: ${pts.motmPoints}</div>
-                            <div style="font-size:0.7rem;">🏆 Season: ${pts.seasonPoints} | 🔥 Total: ${pts.total}</div>
-                         </div>`;
+                html += `<div class="player-card" data-player="${p}">${renderPlayerAvatar(p, "small")}<div class="player-name-card">${p}</div><div class="player-points-preview">🏆 Wins: ${pts.matchWinPoints} | ⭐ MOTM: ${pts.motmPoints}</div><div style="font-size:0.7rem;">🏆 Season: ${pts.seasonPoints} | 🔥 Total: ${pts.total}</div></div>`;
             }
             html += `</div><button id="backFromPlayers" class="nav-link">Back to Leaderboard</button></div>`;
-            container.innerHTML = html;
+            document.getElementById("appContainer").innerHTML = html;
             document.querySelectorAll(".player-card").forEach(card => {
                 card.addEventListener("click", () => showPlayerProfile(card.getAttribute("data-player")));
             });
@@ -927,16 +881,14 @@
             let html = `<div class="card"><h2>📋 Official Results & Winners</h2><h3>🏏 Match Results</h3><div class="matches-container" style="max-height:500px">`;
             for (let i = 0; i < IPL_MATCHES.length; i++) {
                 const res = globalData.actualResults.matches[i];
-                html += `<div class="match-item"><div class="match-header">${IPL_MATCHES[i]}</div>
-                        <div>🏆 Winner: <strong>${res?.winner || "❓ Not Declared"}</strong></div>
-                        <div>⭐ MOTM: <strong>${res?.motm || "Pending"}</strong></div></div>`;
+                html += `<div class="match-item"><div class="match-header">${IPL_MATCHES[i]}</div><div>🏆 Winner: <strong>${res?.winner || "❓ Not Declared"}</strong></div><div>⭐ MOTM: <strong>${res?.motm || "Pending"}</strong></div></div>`;
             }
             html += `</div><h3>🏆 Season Awards</h3><div class="admin-section">`;
             const sa = globalData.actualResults.seasonActual;
             html += `<p>🏆 Tournament Winner: ${sa.tournamentWinner || "TBD"}</p><p>🏅 Top 4: ${sa.top4.length ? sa.top4.join(", ") : "TBD"}</p>`;
             html += `<p>🧡 Orange Cap: ${sa.orangeCapWinner || "TBD"}</p><p>💜 Purple Cap: ${sa.purpleCapWinner || "TBD"}</p><p>👑 POTT: ${sa.pottWinner || "TBD"}</p>`;
             html += `</div><button id="backWinnersBtn" class="nav-link">Back</button></div>`;
-            container.innerHTML = html;
+            document.getElementById("appContainer").innerHTML = html;
             document.getElementById("backWinnersBtn")?.addEventListener("click", () => { renderLeaderboard(); currentView = "leaderboard"; highlightNav(); });
         }
 
@@ -949,13 +901,10 @@
                 }
             }
             if (isAdminMode) {
-                html += `<div class="admin-section"><h3>➕ Add Previous Year Winner (Admin Only)</h3>
-                        <div class="pred-row"><input type="text" id="newYear" placeholder="Year (e.g., 2026)" style="width:120px">
-                        <input type="text" id="newWinnerName" placeholder="Winner Name" style="width:200px">
-                        <button id="addWinnerBtn">➕ Add Winner</button></div></div>`;
+                html += `<div class="admin-section"><h3>➕ Add Previous Year Winner (Admin Only)</h3><div class="pred-row"><input type="text" id="newYear" placeholder="Year (e.g., 2026)" style="width:120px"><input type="text" id="newWinnerName" placeholder="Winner Name" style="width:200px"><button id="addWinnerBtn">➕ Add Winner</button></div></div>`;
             }
             html += `<button id="backPrevBtn" class="nav-link" style="margin-top:1rem">Back</button></div>`;
-            container.innerHTML = html;
+            document.getElementById("appContainer").innerHTML = html;
             if (isAdminMode) {
                 document.getElementById("addWinnerBtn")?.addEventListener("click", async () => {
                     const year = document.getElementById("newYear").value;
@@ -977,7 +926,7 @@
                     <div class="rule-block"><div class="rule-title">❌ WRONG PREDICTION RULE</div><div class="rule-content">Any incorrect or missed prediction → <span class="highlight">0 points</span><br>No negative marking ✅</div></div>
                     <div class="rule-block"><div class="rule-title">⏰ DEADLINES</div><div class="rule-content">🕒 Match Predictions: Winner → Before toss | MOTM → Before match starts<br>📅 Season Predictions: Submit all (Winner, Top 4, Caps, POTT) 👉 <span class="highlight">1 day before IPL begins</span></div></div>
                 </div><button id="backRulesBtn" class="nav-link" style="margin-top:1rem">← Back</button></div>`;
-            container.innerHTML = html;
+            document.getElementById("appContainer").innerHTML = html;
             document.getElementById("backRulesBtn")?.addEventListener("click", () => handleNavigation("leaderboard"));
         }
 
@@ -988,7 +937,7 @@
                     <div><h3>ORGANISED BY-</h3><img src="footer.png" alt="sena" style="max-width: 100%; height: auto;"></div>
                     <div><h3>SPECIAL THANKS</h3><img src="background.png" alt="DARK LORD" style="max-width: 100%; height: auto;"></div>
                 </div><button id="backMoreBtn" class="nav-link" style="margin-top:1rem">← Back</button></div>`;
-            container.innerHTML = html;
+            document.getElementById("appContainer").innerHTML = html;
             document.getElementById("backMoreBtn")?.addEventListener("click", () => handleNavigation("leaderboard"));
         }
 
@@ -1026,7 +975,7 @@
             html += `<div class="pred-row"><label>POTT Winner:</label><input type="text" id="actualPott" value="${sa.pottWinner || ''}"></div>`;
             html += `<button id="saveSeasonActualBtn">💾 Save Season Awards</button></div>`;
             html += `<button id="adminBackBtn" class="nav-link">← Back</button></div>`;
-            container.innerHTML = html;
+            document.getElementById("appContainer").innerHTML = html;
             document.getElementById("adminMatchSearch")?.addEventListener("input", (e) => {
                 const term = e.target.value.toLowerCase();
                 document.querySelectorAll("#adminMatchesContainer .match-item").forEach(item => {
@@ -1080,8 +1029,8 @@
 
         // Initialization: fetch data from backend, then start
         (async function init() {
-            await fetchGlobalData();
-            handleNavigation("leaderboard");
+            const success = await fetchGlobalData();
+            if (success) handleNavigation("leaderboard");
         })();
 
         document.querySelectorAll(".nav-link").forEach(btn => {

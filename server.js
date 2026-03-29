@@ -10,19 +10,16 @@ const ADMIN_PASSWORD = 'lordvolde';
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(__dirname)); // serves index.html, images, videos, etc.
+app.use(express.static(__dirname));
 
-// Helper: read/write data file
 function readData() {
     try {
         if (!fs.existsSync(DATA_FILE)) {
-            // Initialize default data structure
             const defaultData = {
                 playerPredictions: {},
                 actualResults: { matches: {}, seasonActual: { tournamentWinner: null, top4: [], orangeCapWinner: null, purpleCapWinner: null, pottWinner: null } },
                 previousWinners: []
             };
-            // Populate default predictions for 12 players
             const IPL_MATCHES = [
                 "M1 RCB VS SRH", "M2 MI VS KKR", "M3 RR VS CSK", "M4 PBKS VS GT", "M5 LSG VS DC",
                 "M6 KKR VS SRH", "M7 CSK VS PBKS", "M8 DC VS MI", "M9 GT VS RR", "M10 SRH VS LSG",
@@ -77,7 +74,6 @@ function writeData(data) {
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
-// ---------- API ENDPOINTS ----------
 app.get('/api/data', (req, res) => {
     const data = readData();
     res.json(data);
