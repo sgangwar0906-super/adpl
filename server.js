@@ -20,87 +20,87 @@ app.use(express.static(__dirname));
 const SEASON_PREDICTIONS = {
   "Samarth Gangwar": {
     tournamentWinner: "CSK",
-    top4: ["MI", "RCB", "DC", ""],
+    top4: ["MI", "RCB", "DC", "CSK"],
     orangeCap: { first: "Sanju Samson", second: "Virat Kohli", third: "Ruturaj Gaikwad" },
-    purpleCap: { first: "Jaspreet Bumrah", second: "Noor Ahmed", third: "Kuldeep Yadav" },
-    pott: { first: "Sanju Samson", second: "Jaspreet Bumrah", third: "Virat Kohli" }
+    purpleCap: { first: "Jasprit Bumrah", second: "Noor Ahmed", third: "Kuldeep Yadav" },
+    pott: { first: "Sanju Samson", second: "Jasprit Bumrah", third: "Virat Kohli" }
   },
   "Divyansh Tyagi": {
     tournamentWinner: "MI",
-    top4: ["MI", "RCB", "GT", ""],
+    top4: ["MI", "RCB", "GT", "PBKS"],
     orangeCap: { first: "Suryakumar Yadav", second: "Virat Kohli", third: "Shubman Gill" },
-    purpleCap: { first: "Jaspreet Bumrah", second: "Trent Boult", third: "Noor Ahmed" },
+    purpleCap: { first: "Jasprit Bumrah", second: "Trent Boult", third: "Noor Ahmed" },
     pott: { first: "Suryakumar Yadav", second: "Sanju Samson", third: "Virat Kohli" }
   },
   "Dhairya Kumar": {
-    tournamentWinner: "CSK",
-    top4: ["MI", "RCB", "GT", ""],
+    tournamentWinner: "MI",
+    top4: ["MI", "RCB", "GT", "PBKS"],
     orangeCap: { first: "Virat Kohli", second: "Yashasvi Jaiswal", third: "Sanju Samson" },
-    purpleCap: { first: "Jaspreet Bumrah", second: "Arshdeep Singh", third: "Varun Chakravarthy" },
-    pott: { first: "Sanju Samson", second: "Virat Kohli", third: "CSK" }
+    purpleCap: { first: "Jasprit Bumrah", second: "Arshdeep Singh", third: "Varun Chakravarthy" },
+    pott: { first: "Virat Kohli", second: "Suryakumar Yadav", third: "Cameron Green" }
   },
   "Akshay Pratap": {
     tournamentWinner: "CSK",
-    top4: ["MI", "RCB", "GT", ""],
-    orangeCap: { first: "Sai Sudharsan", second: "KL Rahul", third: "Noor Ahmed" },
-    purpleCap: { first: "Arshdeep Singh", second: "Kuldeep Yadav", third: "KL Rahul" },
-    pott: { first: "Sai Sudharsan", second: "Arshdeep Singh", third: "CSK" }
+    top4: ["MI", "DC", "GT", "CSK"],
+    orangeCap: { first: "Sai Sudharsan", second: "Yashasvi Jaiswal", third: "KL Rahul" },
+    purpleCap: { first: "Noor Ahmed", second: "Arshdeep Singh", third: "Kuldeep Yadav" },
+    pott: { first: "KL Rahul", second: "Sai Sudharsan", third: "Yashasvi Jaiswal" }
   },
   "Saksham Rathore": {
     tournamentWinner: "MI",
-    top4: ["MI", "RCB", "DC", ""],
-    orangeCap: { first: "Yashasvi Jaiswal", second: "Ruturaj Gaikwad", third: "Mohd. Shahriar" },
-    purpleCap: { first: "Hardik Pandya", second: "Mohd. Shahriar", third: "Mohd. Shahriar" },
-    pott: { first: "Mohd. Shahriar", second: "Mohd. Shahari", third: "Mohd. Shahriar" }
+    top4: ["MI", "RCB", "DC", "CSK"],
+    orangeCap: { first: "Yashasvi Jaiswal", second: "Ruturaj Gaikwad", third: "Virat Kohli" },
+    purpleCap: { first: "Mohd. Shami", second: "Noor Ahmed", third: "Arshdeep Singh" },
+    pott: { first: "Noor Ahmed", second: "Marco Jansen", third: "Yashasvi Jaiswal" }
   },
   "Syed Askari": {
-    tournamentWinner: "MI",
-    top4: ["RCB", "GT", "", ""],
-    orangeCap: { first: "Virat Kohli", second: "Sanju Samson", third: "Jaspreet Bumrah" },
-    purpleCap: { first: "Arshdeep Singh", second: "Varun Chakravarthy", third: "Sanju Samson" },
-    pott: { first: "Virat Kohli", second: "Sanju Samson", third: "" }
+    tournamentWinner: "RCB",
+    top4: ["RCB", "GT", "MI", "PBKS"],
+    orangeCap: { first: "Virat Kohli", second: "Sanju Samson", third: "Ishan Kishan" },
+    purpleCap: { first: "Jasprit Bumrah", second: "Noor Ahmed", third: "Arshdeep Singh" },
+    pott: { first: "Virat Kohli", second: "Jasprit Bumrah", third: "Sanju Samson" }
   },
   "Shaz Hussain": {
     tournamentWinner: "MI",
-    top4: ["MI", "RCB", "RR", ""],
-    orangeCap: { first: "Shubman Gill", second: "Virat Kohli", third: "Jaspreet Bumrah" },
-    purpleCap: { first: "Mohd. Shahriar", second: "Hardik Pandya", third: "Mohd. Shahriar" },
-    pott: { first: "Mohd. Shahriar", second: "Mohd. Shahriar", third: "Mohd. Shahari" }
+    top4: ["MI", "RCB", "RR", "CSK"],
+    orangeCap: { first: "Shubman Gill", second: "Virat Kohli", third: "Yashasvi Jaiswal" },
+    purpleCap: { first: "Jasprit Bumrah", second: "Mohd. Siraj", third: "Rashid Khan" },
+    pott: { first: "Hardik Pandya", second: "Shubman Gill", third: "Jos Buttler" }
   },
   "Aqdas Raza": {
-    tournamentWinner: "MI",
-    top4: ["MI", "RCB", "GT", ""],
-    orangeCap: { first: "Virat Kohli", second: "Shubman Gill", third: "Jaspreet Bumrah" },
-    purpleCap: { first: "Yuzvendra Chahal", second: "Hrithik Dsouza", third: "Yuzvendra Chahal" },
-    pott: { first: "Yuzvendra Chahal", second: "Yuzvendra Chahal", third: "Yuzvendra Chand" }
+    tournamentWinner: "CSK",
+    top4: ["MI", "RCB", "GT", "CSK"],
+    orangeCap: { first: "Virat Kohli", second: "Shubman Gill", third: "Yashasvi Jaiswal" },
+    purpleCap: { first: "Jasprit Bumrah", second: "Mohd. Siraj", third: "Rashid Khan" },
+    pott: { first: "Hardik Pandya", second: "Virat Kohli", third: "Ravindra Jadeja" }
   },
   "Shubh Saxena": {
-    tournamentWinner: "MI",
-    top4: ["MI", "RCB", "GT", ""],
-    orangeCap: { first: "Suryakumar Yadav", second: "Virat Kohli", third: "Jaspreet Bumrah" },
-    purpleCap: { first: "Varun Chakravarthy", second: "Vaibhav Sooryavanshi", third: "Vaibhav Sooryavanshi" },
-    pott: { first: "Vaibhav Sooryavanshi", second: "Jaishankar", third: "Jaishankar" }
+    tournamentWinner: "RCB",
+    top4: ["MI", "RCB", "GT", "CSK"],
+    orangeCap: { first: "Suryakumar Yadav", second: "Virat Kohli", third: "Shubman Gill" },
+    purpleCap: { first: "Jasprit Bumrah", second: "Yuzvendra Chahal", third: "Noor Ahmed" },
+    pott: { first: "Virat Kohli", second: "Jasprit Bumrah", third: "Hardik Pandya" }
   },
   "Chirag Saxena": {
-    tournamentWinner: "MI",
-    top4: ["RCB", "KKR", "SRH", ""],
+    tournamentWinner: "CSK",
+    top4: ["RCB", "KKR", "MI", "RCB"],
     orangeCap: { first: "Sanju Samson", second: "Virat Kohli", third: "Ruturaj Gaikwad" },
-    purpleCap: { first: "Jaspreet Bumrah", second: "Varun Chakravarthy", third: "Sanju Samson" },
-    pott: { first: "Virat Kohli", second: "Sanju Samson", third: "" }
+    purpleCap: { first: "Jasprit Bumrah", second: "Yuzvendra Chahal", third: "Bhuvneshwar Kumar" },
+    pott: { first: "Sanju Samson", second: "Jasprit Bumrah", third: "Virat Kohli" }
   },
   "Amrit Johri": {
-    tournamentWinner: "MI",
-    top4: ["RCB", "SRH", "SRH", ""],
-    orangeCap: { first: "Virat Kohli", second: "Jos Buttler", third: "Sanju Samson" },
-    purpleCap: { first: "Rohit Sharma", second: "Sanju Samson", third: "Virat Kohli" },
-    pott: { first: "Sanju Samson", second: "Sanju Samson", third: "" }
+    tournamentWinner: "RCB",
+    top4: ["RCB", "SRH", "PBKS", "DC"],
+    orangeCap: { first: "Virat Kohli", second: "Jos Buttler", third: "Sai Sudharsan" },
+    purpleCap: { first: "Noor Ahmed", second: "Arshdeep Singh", third: "Varun Chakravarthy" },
+    pott: { first: "Vaibhav Suryavanshi", second: "Suryakumar Yadav", third: "Virat Kohli" }
   },
   "Hirdyansh Sahni": {
     tournamentWinner: "MI",
-    top4: ["RCB", "GT", "SRH", ""],
-    orangeCap: { first: "Virat Kohli", second: "Suryakumar Yadav", third: "Ruturaj Gaikwad" },
-    purpleCap: { first: "Jaspreet Bumrah", second: "Arshdeep Singh", third: "Kuldeep Yadav" },
-    pott: { first: "Sanju Samson", second: "Virat Kohli", third: "" }
+    top4: ["RCB", "GT", "SRH", "PBKS"],
+    orangeCap: { first: "Virat Kohli", second: "Suryakumar Yadav", third: "Shubman Gill" },
+    purpleCap: { first: "Jasprit Bumrah", second: "Josh Hazlewood", third: "Noor Ahmed" },
+    pott: { first: "Suryakumar Yadav", second: "Sanju Samson", third: "Jasprit Bumrah" }
   }
 };
 
