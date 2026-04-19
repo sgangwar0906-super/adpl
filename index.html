@@ -480,12 +480,12 @@
             <button class="nav-link" data-view="admin">⚙️ Admin</button>
         </div>
     </div>
-    <div class="auto-save-badge" id="autoSaveBadge">💾 Synced with server</div>
+    <div class="auto-save-badge" id="autoSaveBadge">💾 Live Data</div>
 
     <div class="container" id="appContainer"></div>
 
     <script>
-        // ======================== ADPL 2026 PLAYERS ========================
+        // ======================== ADPL 2026 CONSTANTS ========================
         const ADPL_PLAYERS = [
             "Samarth Gangwar", "Divyansh Tyagi", "Dhairya Kumar", "Akshay Pratap",
             "Saksham Rathore", "Syed Askari", "Shaz Hussain", "Aqdas Raza",
@@ -554,32 +554,52 @@
             }
         }
 
-        // ======================== GLOBAL STATE ========================
-        let globalData = {
-            playerPredictions: {},
-            actualResults: { matches: {}, seasonActual: { tournamentWinner: null, top4: [], orangeCapWinner: null, purpleCapWinner: null, pottWinner: null } },
-            previousWinners: []
-        };
-        let isAdminMode = false;
-        let currentView = "leaderboard";
-        const API_BASE = '';
-
-        // Helper: fetch all data from server
-        async function fetchGlobalData() {
-            try {
-                const res = await fetch('/api/data');
-                if (!res.ok) throw new Error('Failed to fetch data');
-                const data = await res.json();
-                globalData = data;
-                return true;
-            } catch (err) {
-                console.error(err);
-                document.getElementById("appContainer").innerHTML = `<div class="card"><h2>⚠️ Connection Error</h2><p>Could not connect to the server. Make sure the backend is running.</p><p>If you are the admin, please deploy this site on Render with the Node.js backend.</p></div>`;
-                return false;
+        // ======================== LOCAL STORAGE BACKEND (Vercel-ready) ========================
+        // Uses localStorage as a simple persistent store (works on Vercel static hosting)
+        const STORAGE_KEY = "ADPL_2026_FULL_DATA";
+        
+        function getDefaultData() {
+            const defaultPreds = {};
+            for (let player of ADPL_PLAYERS) {
+                const matchPreds = [];
+                for (let i = 0; i < IPL_MATCHES.length; i++) {
+                    matchPreds.push({ winner: "", motm: "" });
+                }
+                defaultPreds[player] = {
+                    predictions: {
+                        matchPredictions: matchPreds,
+                        season: { tournamentWinner: null, top4: [], orangeCap: { first: "", second: "", third: "" }, purpleCap: { first: "", second: "", third: "" }, pott: { first: "", second: "", third: "" } }
+                    }
+                };
             }
+            return {
+                playerPredictions: defaultPreds,
+                actualResults: { matches: {}, seasonActual: { tournamentWinner: null, top4: [], orangeCapWinner: null, purpleCapWinner: null, pottWinner: null } },
+                previousWinners: []
+            };
         }
 
-        // Helper: compute points for a player
+        function loadData() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                try {
+                    return JSON.parse(stored);
+                } catch(e) { console.error(e); }
+            }
+            return getDefaultData();
+        }
+
+        function saveData(data) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            document.getElementById("autoSaveBadge") && (document.getElementById("autoSaveBadge").innerHTML = "💾 Saved " + new Date().toLocaleTimeString());
+            setTimeout(() => { if(document.getElementById("autoSaveBadge")) document.getElementById("autoSaveBadge").innerHTML = "💾 Live Data"; }, 1500);
+        }
+
+        let globalData = loadData();
+        let isAdminMode = false;
+        let currentView = "leaderboard";
+
+        // Points computation
         function computePlayerPoints(playerName) {
             const preds = globalData.playerPredictions[playerName]?.predictions;
             if (!preds) return { matchWinPoints: 0, motmPoints: 0, seasonPoints: 0, total: 0 };
@@ -614,124 +634,41 @@
         async function verifyAdmin() {
             if (isAdminMode) return true;
             const pwd = prompt("🔐 Admin Access Required. Enter password:");
-            if (!pwd) return false;
-            try {
-                const res = await fetch('/api/admin/verify', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password: pwd })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    isAdminMode = true;
-                    alert("✅ Admin access granted!");
-                    return true;
-                } else {
-                    alert("❌ Invalid password! Only admin can update data.");
-                    return false;
-                }
-            } catch (err) {
-                alert("Error contacting server.");
+            if (pwd === "ADPL2026@admin") {
+                isAdminMode = true;
+                alert("✅ Admin access granted!");
+                return true;
+            } else {
+                alert("❌ Invalid password!");
                 return false;
             }
         }
 
-        async function savePlayerPredictions(playerName, predictions) {
-            if (!isAdminMode) return false;
-            const pwd = prompt("Admin password to save predictions:");
-            try {
-                const res = await fetch('/api/admin/updatePredictions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ playerName, predictions, adminPassword: pwd })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    await fetchGlobalData();
-                    return true;
-                } else {
-                    alert("Update failed: " + (data.error || "Unknown error"));
-                    return false;
-                }
-            } catch (err) {
-                alert("Error saving predictions.");
-                return false;
-            }
+        function savePlayerPredictionsLocally(playerName, predictions) {
+            globalData.playerPredictions[playerName].predictions = predictions;
+            saveData(globalData);
+            return true;
         }
 
-        async function saveMatchResults(updatedMatches) {
-            if (!isAdminMode && !await verifyAdmin()) return false;
-            const pwd = prompt("Confirm admin password to save match results:");
-            try {
-                const res = await fetch('/api/admin/updateMatchResults', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ matches: updatedMatches, adminPassword: pwd })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    await fetchGlobalData();
-                    alert("Match results saved!");
-                    return true;
-                } else {
-                    alert("Failed: " + (data.error || "Wrong password?"));
-                    return false;
-                }
-            } catch (err) {
-                alert("Error saving match results.");
-                return false;
-            }
+        function saveMatchResultsLocally(updatedMatches) {
+            globalData.actualResults.matches = updatedMatches;
+            saveData(globalData);
+            return true;
         }
 
-        async function saveSeasonActuals(seasonData) {
-            if (!isAdminMode && !await verifyAdmin()) return false;
-            const pwd = prompt("Confirm admin password to save season awards:");
-            try {
-                const res = await fetch('/api/admin/updateSeasonActuals', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ seasonActual: seasonData, adminPassword: pwd })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    await fetchGlobalData();
-                    alert("Season awards saved!");
-                    return true;
-                } else {
-                    alert("Failed: " + (data.error || "Wrong password?"));
-                    return false;
-                }
-            } catch (err) {
-                alert("Error saving season awards.");
-                return false;
-            }
+        function saveSeasonActualsLocally(seasonData) {
+            globalData.actualResults.seasonActual = seasonData;
+            saveData(globalData);
+            return true;
         }
 
-        async function addPreviousWinner(year, winnerName) {
-            if (!isAdminMode && !await verifyAdmin()) return false;
-            const pwd = prompt("Admin password to add winner:");
-            try {
-                const res = await fetch('/api/admin/updatePreviousWinners', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'add', year, winnerName, adminPassword: pwd })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    await fetchGlobalData();
-                    alert(`Added: ${winnerName} (${year})`);
-                    return true;
-                } else {
-                    alert("Failed: " + (data.error || "Wrong password?"));
-                    return false;
-                }
-            } catch (err) {
-                alert("Error adding winner.");
-                return false;
-            }
+        function addPreviousWinnerLocally(year, winnerName) {
+            globalData.previousWinners.push({ year, winnerName });
+            saveData(globalData);
+            return true;
         }
 
-        // ======================== RENDER FUNCTIONS ========================
+        // ========== UI RENDER FUNCTIONS (identical to original logic) ==========
         function renderLeaderboard() {
             const pointsMap = {};
             for (let p of ADPL_PLAYERS) pointsMap[p] = computePlayerPoints(p);
@@ -844,7 +781,7 @@
                     newPreds.season.orangeCap = { first: document.getElementById("orange1")?.value, second: document.getElementById("orange2")?.value, third: document.getElementById("orange3")?.value };
                     newPreds.season.purpleCap = { first: document.getElementById("purple1")?.value, second: document.getElementById("purple2")?.value, third: document.getElementById("purple3")?.value };
                     newPreds.season.pott = { first: document.getElementById("pott1")?.value, second: document.getElementById("pott2")?.value, third: document.getElementById("pott3")?.value };
-                    const success = await savePlayerPredictions(playerName, newPreds);
+                    const success = savePlayerPredictionsLocally(playerName, newPreds);
                     if (success) {
                         document.getElementById("profileSaveMsg").innerText = "✅ Saved & Synced!";
                         setTimeout(() => document.getElementById("profileSaveMsg").innerText = "", 1500);
@@ -910,7 +847,7 @@
                     const year = document.getElementById("newYear").value;
                     const winnerName = document.getElementById("newWinnerName").value;
                     if (year && winnerName) {
-                        await addPreviousWinner(year, winnerName);
+                        addPreviousWinnerLocally(year, winnerName);
                         renderPrevWinners();
                     } else alert("Please enter both Year and Winner Name!");
                 });
@@ -937,8 +874,7 @@ src="https://www.youtube.com/embed/8T4vxCnTiNc"
 title="YouTube video player" 
 frameborder="0" 
 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-allowfullscreen>
-</iframe>🎬 Official ADPL 2026 intro – meet the contenders!</p></div>
+allowfullscreen></iframe></div>
                     <div class="media-card"><h3>🎵 Theme Song</h3><audio id="themeAudio" controls><source src="theme.mp3" type="audio/mpeg">Your browser does not support the audio element.</audio><p style="font-size:0.8rem; margin-top:8px; color:#aaa;">🎧 ADPL 2026 Anthem – play it loud!</p></div>
                     <div><h3>ORGANISED BY-</h3><img src="footer.png" alt="sena" style="max-width: 100%; height: auto;"></div>
                     <div><h3>SPECIAL THANKS</h3><img src="background.png" alt="DARK LORD" style="max-width: 100%; height: auto;"></div>
@@ -954,7 +890,7 @@ allowfullscreen>
                 highlightNav();
                 return;
             }
-            let html = `<div class="card"><h2>⚙️ Admin Panel</h2><div class="admin-warning">⚠️ Admin Mode – all changes saved to server and visible to all users.</div>`;
+            let html = `<div class="card"><h2>⚙️ Admin Panel</h2><div class="admin-warning">⚠️ Admin Mode – all changes saved to local storage (Vercel ready).</div>`;
             html += `<div class="admin-section"><h3>🏏 Update Match Results</h3><div class="search-filter"><input type="text" id="adminMatchSearch" placeholder="🔍 Search match"></div>
             <div class="matches-container" id="adminMatchesContainer" style="max-height:500px">`;
             for (let i = 0; i < IPL_MATCHES.length; i++) {
@@ -996,7 +932,7 @@ allowfullscreen>
                         motm: document.getElementById(`adminMotm_${i}`)?.value || null
                     };
                 }
-                await saveMatchResults(newMatches);
+                saveMatchResultsLocally(newMatches);
                 renderAdminPanel();
             });
             document.getElementById("saveSeasonActualBtn")?.addEventListener("click", async () => {
@@ -1009,7 +945,7 @@ allowfullscreen>
                     purpleCapWinner: document.getElementById("actualPurple").value || null,
                     pottWinner: document.getElementById("actualPott").value || null
                 };
-                await saveSeasonActuals(seasonData);
+                saveSeasonActualsLocally(seasonData);
                 renderAdminPanel();
             });
             document.getElementById("adminBackBtn")?.addEventListener("click", () => { renderLeaderboard(); currentView = "leaderboard"; highlightNav(); });
@@ -1033,15 +969,12 @@ allowfullscreen>
             highlightNav();
         }
 
-        // Initialization: fetch data from backend, then start
-        (async function init() {
-            const success = await fetchGlobalData();
-            if (success) handleNavigation("leaderboard");
-        })();
-
+        // Event binding for nav buttons after DOM load
         document.querySelectorAll(".nav-link").forEach(btn => {
             btn.addEventListener("click", () => handleNavigation(btn.getAttribute("data-view")));
         });
+        
+        handleNavigation("leaderboard");
     </script>
 </body>
 </html>
